@@ -3,6 +3,7 @@ __pycache__/
 .pytest_cache/
 .venv/
 venv/
+AGENTS.md
 feeds.toml
 feeds.*.local.toml
 .env

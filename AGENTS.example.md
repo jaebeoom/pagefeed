@@ -1,4 +1,6 @@
-# AGENTS.md
+# AGENTS.example.md
+
+Copy this file to `AGENTS.md` for local agent instructions.
 
 ## Project Scope
 

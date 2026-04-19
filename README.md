@@ -91,6 +91,12 @@ cp feeds.example.toml feeds.toml
 
 Then edit `feeds.toml`. It is ignored by Git.
 
+Optional local agent instructions can be created from the example:
+
+```text
+cp AGENTS.example.md AGENTS.md
+```
+
 Generate feeds:
 
 ```text
