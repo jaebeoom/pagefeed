@@ -50,6 +50,35 @@ class GeneratorTest(unittest.TestCase):
         )
         self.assertEqual(items[0].published, datetime(2026, 4, 19, tzinfo=UTC))
 
+    def test_extracts_titles_from_homepage_card_links(self) -> None:
+        html = """
+        <a href="/essays/2026/04/21/01/">
+          <span>essays</span>
+          <span>2026-04-21</span>
+          <h2>About Stateless Systems</h2>
+          <p>About Stateless Systems begins with a longer summary.</p>
+          <span>Read more -></span>
+        </a>
+        """
+        config = FeedConfig(
+            name="test",
+            source_url="https://example.com/",
+            output_path=Path("public/test.xml"),
+            public_path="/test.xml",
+            title="Test",
+            description="Test feed",
+            include_href_patterns=(
+                re.compile(r"^/[a-z0-9-]+/[0-9]{4}/[0-9]{2}/[0-9]{2}/[0-9]{2}/$"),
+            ),
+            max_items=50,
+            min_items=1,
+        )
+
+        items = extract_items(html, config)
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0].title, "About Stateless Systems")
+
     def test_builds_parseable_rss(self) -> None:
         config = FeedConfig(
             name="test",

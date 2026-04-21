@@ -127,12 +127,12 @@ Feeds live in `feeds.toml` locally, or in the GitHub repository secret `PAGEFEED
 
 Each feed can define:
 
-- `source_url`: page to fetch
+- `source_url`: listing page to fetch
 - `output_path`: generated XML path
 - `public_path`: path under the published site
 - `title`: RSS channel title
 - `description`: RSS channel description
-- `include_href_patterns`: regular expressions for item links
+- `include_href_patterns`: regular expressions for anchors that should become feed items
 - `max_items`: maximum items to include
 - `min_items`: minimum items required before writing XML
 
@@ -140,7 +140,7 @@ Multiple feeds are supported by adding more `[[feeds]]` tables. Each feed should
 
 Prefer opaque output names such as `public/f-a1b2c3.xml` instead of names that reveal the source site. This does not make the feed private, but it avoids exposing the source through the URL alone.
 
-The extractor is intentionally conservative. It is designed for simple index pages where each item appears as an anchor link.
+The extractor is intentionally conservative. It is designed for simple index pages where each item appears as an anchor link. A feed can point at a higher-level listing page when `include_href_patterns` narrows the matches to article URLs. For card-style listings, title extraction skips category, date, and read-more labels before falling back to anchor text.
 
 Keep generated feeds limited to titles, links, dates, and minimal metadata. Do not add full-content scraping unless you have permission from the source site.
 

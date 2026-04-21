@@ -11,7 +11,7 @@ from datetime import UTC, date, datetime, time
 from html.parser import HTMLParser
 from pathlib import Path
 from typing import Iterable
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 from xml.etree import ElementTree as ET
 
 
@@ -191,13 +191,47 @@ def href_matches(
 
 
 def extract_title(anchor: _Anchor) -> str:
-    if anchor.span_parts:
-        first_span = " ".join(anchor.span_parts[0]).strip()
-        if first_span:
-            return first_span
+    category_labels = category_label_candidates(anchor.href)
+
+    for span_parts in anchor.span_parts:
+        span_text = clean_title_text(" ".join(span_parts))
+        if span_text and not is_title_noise(span_text, category_labels):
+            return span_text
+
+    for part in anchor.parts:
+        part_text = clean_title_text(part)
+        if part_text and not is_title_noise(part_text, category_labels):
+            return part_text
 
     text = " ".join(anchor.parts).strip()
-    return re.sub(r"\s*[0-9]{4}-[0-9]{2}-[0-9]{2}.*$", "", text).strip()
+    return clean_title_text(text)
+
+
+def clean_title_text(text: str) -> str:
+    normalized = " ".join(text.split()).strip()
+    return re.sub(r"\s*[0-9]{4}-[0-9]{2}-[0-9]{2}.*$", "", normalized).strip()
+
+
+def is_title_noise(text: str, category_labels: set[str]) -> bool:
+    normalized = normalize_label(text)
+    return normalized in category_labels or normalized in {"read more", "read more ->", "read more \u2192"}
+
+
+def category_label_candidates(href: str) -> set[str]:
+    path = urlparse(href).path
+    segments = [segment for segment in path.split("/") if segment]
+    if not segments:
+        return set()
+
+    category = segments[0]
+    labels = {normalize_label(category), normalize_label(category.replace("-", " "))}
+    if category.endswith("s"):
+        labels.add(normalize_label(category[:-1]))
+    return labels
+
+
+def normalize_label(text: str) -> str:
+    return " ".join(text.split()).strip().lower()
 
 
 def extract_date(anchor: _Anchor) -> datetime | None:
