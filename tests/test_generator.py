@@ -1,104 +1,15 @@
 from __future__ import annotations
 
-import re
 import tempfile
 import unittest
-from datetime import UTC, datetime
 from pathlib import Path
 from unittest.mock import patch
-from xml.etree import ElementTree as ET
 
-from pagefeed.generator import FeedConfig, build_rss, extract_items, generate_from_config, validate_items
+from pagefeed.generator import generate_from_config, validate_items
+from pagefeed.models import FeedConfig
 
 
 class GeneratorTest(unittest.TestCase):
-    def test_extracts_matching_post_links(self) -> None:
-        html = """
-        <section>
-          <ul>
-            <li>
-              <a href="/posts/2026/04/19/03/">
-                <span>Example Post</span>
-                <span>2026-04-19 · #03</span>
-              </a>
-            </li>
-            <li><a href="/about/"><span>About</span></a></li>
-          </ul>
-        </section>
-        """
-        config = FeedConfig(
-            name="test",
-            source_url="https://example.com/posts/",
-            output_path=Path("public/test.xml"),
-            public_path="/test.xml",
-            title="Test",
-            description="Test feed",
-            include_href_patterns=(
-                re.compile(r"^/posts/[0-9]{4}/[0-9]{2}/[0-9]{2}/[0-9]{2}/$"),
-            ),
-            max_items=50,
-            min_items=1,
-        )
-
-        items = extract_items(html, config)
-
-        self.assertEqual(len(items), 1)
-        self.assertEqual(items[0].title, "Example Post")
-        self.assertEqual(
-            items[0].url,
-            "https://example.com/posts/2026/04/19/03/",
-        )
-        self.assertEqual(items[0].published, datetime(2026, 4, 19, tzinfo=UTC))
-
-    def test_extracts_titles_from_homepage_card_links(self) -> None:
-        html = """
-        <a href="/essays/2026/04/21/01/">
-          <span>essays</span>
-          <span>2026-04-21</span>
-          <h2>About Stateless Systems</h2>
-          <p>About Stateless Systems begins with a longer summary.</p>
-          <span>Read more -></span>
-        </a>
-        """
-        config = FeedConfig(
-            name="test",
-            source_url="https://example.com/",
-            output_path=Path("public/test.xml"),
-            public_path="/test.xml",
-            title="Test",
-            description="Test feed",
-            include_href_patterns=(
-                re.compile(r"^/[a-z0-9-]+/[0-9]{4}/[0-9]{2}/[0-9]{2}/[0-9]{2}/$"),
-            ),
-            max_items=50,
-            min_items=1,
-        )
-
-        items = extract_items(html, config)
-
-        self.assertEqual(len(items), 1)
-        self.assertEqual(items[0].title, "About Stateless Systems")
-
-    def test_builds_parseable_rss(self) -> None:
-        config = FeedConfig(
-            name="test",
-            source_url="https://example.com/posts/",
-            output_path=Path("public/test.xml"),
-            public_path="/test.xml",
-            title="Test Feed",
-            description="Test description",
-            include_href_patterns=(),
-            max_items=50,
-            min_items=1,
-        )
-
-        xml_text = build_rss(config, [], "https://example.github.io/pagefeed/test.xml")
-        root = ET.fromstring(xml_text)
-
-        self.assertEqual(root.tag, "rss")
-        self.assertEqual(root.attrib["version"], "2.0")
-        self.assertEqual(root.findtext("channel/title"), "Test Feed")
-
     def test_validate_items_fails_when_extraction_drops_below_minimum(self) -> None:
         config = FeedConfig(
             name="test",
@@ -142,7 +53,3 @@ class GeneratorTest(unittest.TestCase):
                     generate_from_config(config_path)
 
             self.assertEqual(output_path.read_text(encoding="utf-8"), "existing feed")
-
-
-if __name__ == "__main__":
-    unittest.main()

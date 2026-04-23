@@ -1,14 +1,22 @@
+# Copy to feeds.toml locally, or store the same content in PAGEFEED_CONFIG_TOML.
+
 [[feeds]]
+# Used in error messages and logs.
 name = "example-blog"
+# Public listing page to scrape.
 source_url = "https://example.com/posts/"
+# Local output written by the generator.
 output_path = "public/f-000001.xml"
+# Public path under the deployed Pages site.
 public_path = "/f-000001.xml"
 title = "Unofficial Example Blog Updates"
 description = "Unofficial RSS feed generated from a public listing page. Links point to the original source."
+# Match either relative hrefs or resolved absolute URLs.
 include_href_patterns = [
   "^/posts/[0-9]{4}/[0-9]{2}/[0-9]{2}/[^/]+/$",
   "^https://example\\.com/posts/[0-9]{4}/[0-9]{2}/[0-9]{2}/[^/]+/$",
 ]
+# Fail fast if the source page suddenly returns too few matches.
 max_items = 50
 min_items = 1
 
