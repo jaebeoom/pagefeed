@@ -11,20 +11,23 @@ from .rss import build_rss
 
 def generate_from_config(config_path: Path) -> list[GenerateResult]:
     """Generate every configured feed and return output summaries."""
-    configs = load_config(config_path)
-    results: list[GenerateResult] = []
+    return [_generate_feed(config) for config in load_config(config_path)]
 
-    for config in configs:
-        page_html = fetch_text(config.source_url)
-        items = extract_items(page_html, config)
-        validate_items(config, items)
-        feed_url = build_feed_url(config)
-        xml_text = build_rss(config, items, feed_url)
-        config.output_path.parent.mkdir(parents=True, exist_ok=True)
-        config.output_path.write_text(xml_text, encoding="utf-8")
-        results.append(GenerateResult(config.output_path, len(items)))
 
-    return results
+def _generate_feed(config: FeedConfig) -> GenerateResult:
+    """Generate one configured feed and return its output summary."""
+    page_html = fetch_text(config.source_url)
+    items = extract_items(page_html, config)
+    validate_items(config, items)
+
+    xml_text = build_rss(config, items, build_feed_url(config))
+    _write_feed(config, xml_text)
+    return GenerateResult(config.output_path, len(items))
+
+
+def _write_feed(config: FeedConfig, xml_text: str) -> None:
+    config.output_path.parent.mkdir(parents=True, exist_ok=True)
+    config.output_path.write_text(xml_text, encoding="utf-8")
 
 
 def validate_items(config: FeedConfig, items: list[FeedItem]) -> None:
