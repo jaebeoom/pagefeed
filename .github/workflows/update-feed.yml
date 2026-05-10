@@ -55,6 +55,8 @@ jobs:
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
+        with:
+          enablement: true
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
@@ -76,7 +78,7 @@ jobs:
     needs:
       - build
       - deploy
-    if: ${{ always() && (needs.build.result == 'failure' || needs.build.result == 'cancelled' || needs.deploy.result == 'failure' || needs.deploy.result == 'cancelled') }}
+    if: ${{ always() && (needs.build.result != 'success' || needs.deploy.result != 'success') }}
     runs-on: ubuntu-latest
     steps:
       - name: Send Telegram alert
@@ -84,12 +86,20 @@ jobs:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
         run: |
           if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
             echo "Telegram secrets are not configured; skipping alert."
             exit 0
           fi
 
-          curl -fsS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+          http_status="$(curl -sS -o telegram-response.json -w '%{http_code}' -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
-            --data-urlencode text="pagefeed failed. Check: ${RUN_URL}"
+            --data-urlencode text="pagefeed update did not complete. build=${BUILD_RESULT}, deploy=${DEPLOY_RESULT}. Check: ${RUN_URL}")"
+
+          if [ "$http_status" -lt 200 ] || [ "$http_status" -ge 300 ]; then
+            echo "Telegram alert failed with HTTP ${http_status}:"
+            cat telegram-response.json
+            exit 1
+          fi
