@@ -2,6 +2,12 @@ name: Update feeds
 
 on:
   workflow_dispatch:
+    inputs:
+      send_test_alert:
+        description: "Send a Telegram alert even if the feed update succeeds"
+        required: false
+        default: false
+        type: boolean
   schedule:
     - cron: "17 * * * *"
 
@@ -78,7 +84,7 @@ jobs:
     needs:
       - build
       - deploy
-    if: ${{ always() && (needs.build.result != 'success' || needs.deploy.result != 'success') }}
+    if: ${{ always() && (needs.build.result != 'success' || needs.deploy.result != 'success' || inputs.send_test_alert) }}
     runs-on: ubuntu-latest
     steps:
       - name: Send Telegram alert
@@ -88,15 +94,22 @@ jobs:
           RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           BUILD_RESULT: ${{ needs.build.result }}
           DEPLOY_RESULT: ${{ needs.deploy.result }}
+          SEND_TEST_ALERT: ${{ inputs.send_test_alert }}
         run: |
           if [ -z "$TELEGRAM_BOT_TOKEN" ] || [ -z "$TELEGRAM_CHAT_ID" ]; then
             echo "Telegram secrets are not configured; skipping alert."
             exit 0
           fi
 
+          if [ "$SEND_TEST_ALERT" = "true" ]; then
+            alert_text="pagefeed alert test succeeded. build=${BUILD_RESULT}, deploy=${DEPLOY_RESULT}. Check: ${RUN_URL}"
+          else
+            alert_text="pagefeed update did not complete. build=${BUILD_RESULT}, deploy=${DEPLOY_RESULT}. Check: ${RUN_URL}"
+          fi
+
           http_status="$(curl -sS -o telegram-response.json -w '%{http_code}' -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
             -d chat_id="${TELEGRAM_CHAT_ID}" \
-            --data-urlencode text="pagefeed update did not complete. build=${BUILD_RESULT}, deploy=${DEPLOY_RESULT}. Check: ${RUN_URL}")"
+            --data-urlencode text="${alert_text}")"
 
           if [ "$http_status" -lt 200 ] || [ "$http_status" -ge 300 ]; then
             echo "Telegram alert failed with HTTP ${http_status}:"
