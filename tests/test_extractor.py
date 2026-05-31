@@ -3,10 +3,9 @@ from __future__ import annotations
 import re
 import unittest
 from datetime import UTC, datetime
-from pathlib import Path
 
+from helpers import make_feed_config
 from pagefeed.extractor import extract_items
-from pagefeed.models import FeedConfig
 
 
 class ExtractorTest(unittest.TestCase):
@@ -24,18 +23,10 @@ class ExtractorTest(unittest.TestCase):
           </ul>
         </section>
         """
-        config = FeedConfig(
-            name="test",
-            source_url="https://example.com/posts/",
-            output_path=Path("public/test.xml"),
-            public_path="/test.xml",
-            title="Test",
-            description="Test feed",
+        config = make_feed_config(
             include_href_patterns=(
                 re.compile(r"^/posts/[0-9]{4}/[0-9]{2}/[0-9]{2}/[0-9]{2}/$"),
             ),
-            max_items=50,
-            min_items=1,
         )
 
         items = extract_items(html, config)
@@ -55,18 +46,11 @@ class ExtractorTest(unittest.TestCase):
           <span>Read more -></span>
         </a>
         """
-        config = FeedConfig(
-            name="test",
+        config = make_feed_config(
             source_url="https://example.com/",
-            output_path=Path("public/test.xml"),
-            public_path="/test.xml",
-            title="Test",
-            description="Test feed",
             include_href_patterns=(
                 re.compile(r"^/[a-z0-9-]+/[0-9]{4}/[0-9]{2}/[0-9]{2}/[0-9]{2}/$"),
             ),
-            max_items=50,
-            min_items=1,
         )
 
         items = extract_items(html, config)
@@ -87,18 +71,11 @@ class ExtractorTest(unittest.TestCase):
           <h2>Gallery Title</h2>
         </a>
         """
-        config = FeedConfig(
-            name="test",
+        config = make_feed_config(
             source_url="https://example.com/",
-            output_path=Path("public/test.xml"),
-            public_path="/test.xml",
-            title="Test",
-            description="Test feed",
             include_href_patterns=(
                 re.compile(r"^/[a-z0-9-]+/[0-9]{4}/[0-9]{2}/[0-9]{2}/[0-9]{2}/$"),
             ),
-            max_items=50,
-            min_items=1,
             exclude_href_patterns=(re.compile(r"^/art-gallery/"),),
         )
 
@@ -114,17 +91,7 @@ class ExtractorTest(unittest.TestCase):
           <span>2026-02-31</span>
         </a>
         """
-        config = FeedConfig(
-            name="test",
-            source_url="https://example.com/posts/",
-            output_path=Path("public/test.xml"),
-            public_path="/test.xml",
-            title="Test",
-            description="Test feed",
-            include_href_patterns=(re.compile(r"^/posts/.+/$"),),
-            max_items=50,
-            min_items=1,
-        )
+        config = make_feed_config()
 
         items = extract_items(html, config)
 

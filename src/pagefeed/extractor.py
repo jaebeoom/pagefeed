@@ -61,37 +61,52 @@ class ListingParser(HTMLParser):
 
 
 def extract_items(page_html: str, config: FeedConfig) -> list[FeedItem]:
-    parser = ListingParser()
-    parser.feed(page_html)
-    parser.close()
-
     seen: set[str] = set()
     items: list[FeedItem] = []
-    for anchor in parser.anchors:
+    for anchor in parse_anchors(page_html):
         absolute_url = urljoin(config.source_url, anchor.href)
         if absolute_url in seen:
             continue
-        if not href_matches(anchor.href, absolute_url, config.include_href_patterns):
-            continue
-        if href_matches(anchor.href, absolute_url, config.exclude_href_patterns):
+        if not anchor_matches_config(anchor, absolute_url, config):
             continue
 
-        title = extract_title(anchor)
-        if not title:
+        item = feed_item_from_anchor(anchor, absolute_url)
+        if item is None:
             continue
 
         seen.add(absolute_url)
-        items.append(
-            FeedItem(
-                title=title,
-                url=absolute_url,
-                published=extract_date(anchor),
-            )
-        )
+        items.append(item)
         if len(items) >= config.max_items:
             break
 
     return items
+
+
+def parse_anchors(page_html: str) -> list[_Anchor]:
+    parser = ListingParser()
+    parser.feed(page_html)
+    parser.close()
+    return parser.anchors
+
+
+def anchor_matches_config(anchor: _Anchor, absolute_url: str, config: FeedConfig) -> bool:
+    return href_matches(
+        anchor.href,
+        absolute_url,
+        config.include_href_patterns,
+    ) and not href_matches(anchor.href, absolute_url, config.exclude_href_patterns)
+
+
+def feed_item_from_anchor(anchor: _Anchor, absolute_url: str) -> FeedItem | None:
+    title = extract_title(anchor)
+    if not title:
+        return None
+
+    return FeedItem(
+        title=title,
+        url=absolute_url,
+        published=extract_date(anchor),
+    )
 
 
 def href_matches(

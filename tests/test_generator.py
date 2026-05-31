@@ -7,8 +7,9 @@ from pathlib import Path
 from unittest.mock import patch
 from xml.etree import ElementTree as ET
 
+from helpers import make_feed_config
 from pagefeed.generator import generate_from_config, validate_items
-from pagefeed.models import FeedConfig, GenerateResult
+from pagefeed.models import GenerateResult
 
 
 class GeneratorTest(unittest.TestCase):
@@ -50,16 +51,10 @@ class GeneratorTest(unittest.TestCase):
             self.assertEqual(root.findtext("channel/item/title"), "First Post")
 
     def test_validate_items_fails_when_extraction_drops_below_minimum(self) -> None:
-        config = FeedConfig(
-            name="test",
-            source_url="https://example.com/posts/",
-            output_path=Path("public/test.xml"),
-            public_path="/test.xml",
+        config = make_feed_config(
             title="Test Feed",
             description="Test description",
             include_href_patterns=(),
-            max_items=50,
-            min_items=1,
         )
 
         with self.assertRaisesRegex(RuntimeError, "extracted 0 item"):

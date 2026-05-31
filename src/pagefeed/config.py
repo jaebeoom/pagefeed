@@ -34,11 +34,19 @@ def load_config(config_path: Path) -> list[FeedConfig]:
             ),
             title=_require_string(raw_feed, "title", section),
             description=_require_string(raw_feed, "description", section),
-            include_href_patterns=_compile_include_patterns(raw_feed, section),
+            include_href_patterns=_compile_patterns(
+                raw_feed,
+                "include_href_patterns",
+                section,
+                required=True,
+            ),
             max_items=_parse_positive_int(raw_feed, "max_items", section, default=50),
             min_items=_parse_positive_int(raw_feed, "min_items", section, default=1),
-            exclude_href_patterns=_compile_optional_patterns(
-                raw_feed, "exclude_href_patterns", section
+            exclude_href_patterns=_compile_patterns(
+                raw_feed,
+                "exclude_href_patterns",
+                section,
+                required=False,
             ),
         )
         _validate_unique_paths(config, section, seen_output_paths, seen_public_paths)
@@ -64,18 +72,6 @@ def _optional_string(raw_feed: Mapping[str, Any], key: str, section: str) -> str
     if not isinstance(value, str) or not value.strip():
         raise ValueError(f"{section}.{key} must be a non-empty string when provided")
     return value.strip()
-
-
-def _compile_include_patterns(
-    raw_feed: Mapping[str, Any], section: str
-) -> tuple[re.Pattern[str], ...]:
-    return _compile_patterns(raw_feed, "include_href_patterns", section, required=True)
-
-
-def _compile_optional_patterns(
-    raw_feed: Mapping[str, Any], key: str, section: str
-) -> tuple[re.Pattern[str], ...]:
-    return _compile_patterns(raw_feed, key, section, required=False)
 
 
 def _compile_patterns(
