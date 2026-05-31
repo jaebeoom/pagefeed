@@ -34,9 +34,12 @@ def load_config(config_path: Path) -> list[FeedConfig]:
             ),
             title=_require_string(raw_feed, "title", section),
             description=_require_string(raw_feed, "description", section),
-            include_href_patterns=_compile_patterns(raw_feed, section),
+            include_href_patterns=_compile_include_patterns(raw_feed, section),
             max_items=_parse_positive_int(raw_feed, "max_items", section, default=50),
             min_items=_parse_positive_int(raw_feed, "min_items", section, default=1),
+            exclude_href_patterns=_compile_optional_patterns(
+                raw_feed, "exclude_href_patterns", section
+            ),
         )
         _validate_unique_paths(config, section, seen_output_paths, seen_public_paths)
         if config.min_items > config.max_items:
@@ -63,23 +66,40 @@ def _optional_string(raw_feed: Mapping[str, Any], key: str, section: str) -> str
     return value.strip()
 
 
-def _compile_patterns(raw_feed: Mapping[str, Any], section: str) -> tuple[re.Pattern[str], ...]:
-    raw_patterns = raw_feed.get("include_href_patterns")
+def _compile_include_patterns(
+    raw_feed: Mapping[str, Any], section: str
+) -> tuple[re.Pattern[str], ...]:
+    return _compile_patterns(raw_feed, "include_href_patterns", section, required=True)
+
+
+def _compile_optional_patterns(
+    raw_feed: Mapping[str, Any], key: str, section: str
+) -> tuple[re.Pattern[str], ...]:
+    return _compile_patterns(raw_feed, key, section, required=False)
+
+
+def _compile_patterns(
+    raw_feed: Mapping[str, Any],
+    key: str,
+    section: str,
+    *,
+    required: bool,
+) -> tuple[re.Pattern[str], ...]:
+    raw_patterns = raw_feed.get(key)
+    if raw_patterns is None and not required:
+        return ()
     if not isinstance(raw_patterns, list) or not raw_patterns:
-        raise ValueError(f"{section}.include_href_patterns must contain at least one regex pattern")
+        suffix = "" if required else " when provided"
+        raise ValueError(f"{section}.{key} must contain at least one regex pattern{suffix}")
 
     patterns: list[re.Pattern[str]] = []
     for index, raw_pattern in enumerate(raw_patterns, start=1):
         if not isinstance(raw_pattern, str) or not raw_pattern.strip():
-            raise ValueError(
-                f"{section}.include_href_patterns[{index}] must be a non-empty string"
-            )
+            raise ValueError(f"{section}.{key}[{index}] must be a non-empty string")
         try:
             patterns.append(re.compile(raw_pattern))
         except re.error as exc:
-            raise ValueError(
-                f"{section}.include_href_patterns[{index}] is not a valid regex: {exc}"
-            ) from exc
+            raise ValueError(f"{section}.{key}[{index}] is not a valid regex: {exc}") from exc
 
     return tuple(patterns)
 

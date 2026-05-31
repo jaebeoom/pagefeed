@@ -16,6 +16,11 @@ include_href_patterns = [
   "^/posts/[0-9]{4}/[0-9]{2}/[0-9]{2}/[^/]+/$",
   "^https://example\\.com/posts/[0-9]{4}/[0-9]{2}/[0-9]{2}/[^/]+/$",
 ]
+# Optional deny-list checked after include_href_patterns.
+# exclude_href_patterns = [
+#   "^/art-gallery/",
+#   "^https://example\\.com/art-gallery/",
+# ]
 # Fail fast if the source page suddenly returns too few matches.
 max_items = 50
 min_items = 1

@@ -21,6 +21,7 @@ class FeedConfig:
     include_href_patterns: tuple[re.Pattern[str], ...]
     max_items: int
     min_items: int
+    exclude_href_patterns: tuple[re.Pattern[str], ...] = ()
 
 
 @dataclass(frozen=True)

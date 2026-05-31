@@ -74,6 +74,39 @@ class ExtractorTest(unittest.TestCase):
         self.assertEqual(len(items), 1)
         self.assertEqual(items[0].title, "About Stateless Systems")
 
+    def test_excludes_matching_links_after_include_patterns(self) -> None:
+        html = """
+        <a href="/essays/2026/05/30/01/">
+          <span>essays</span>
+          <span>2026-05-30</span>
+          <h2>Essay Title</h2>
+        </a>
+        <a href="/art-gallery/2026/05/30/01/">
+          <span>art gallery</span>
+          <span>2026-05-30</span>
+          <h2>Gallery Title</h2>
+        </a>
+        """
+        config = FeedConfig(
+            name="test",
+            source_url="https://example.com/",
+            output_path=Path("public/test.xml"),
+            public_path="/test.xml",
+            title="Test",
+            description="Test feed",
+            include_href_patterns=(
+                re.compile(r"^/[a-z0-9-]+/[0-9]{4}/[0-9]{2}/[0-9]{2}/[0-9]{2}/$"),
+            ),
+            max_items=50,
+            min_items=1,
+            exclude_href_patterns=(re.compile(r"^/art-gallery/"),),
+        )
+
+        items = extract_items(html, config)
+
+        self.assertEqual(len(items), 1)
+        self.assertEqual(items[0].title, "Essay Title")
+
     def test_invalid_date_text_does_not_abort_extraction(self) -> None:
         html = """
         <a href="/posts/2026/02/31/01/">

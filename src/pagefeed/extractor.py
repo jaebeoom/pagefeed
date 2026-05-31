@@ -73,6 +73,8 @@ def extract_items(page_html: str, config: FeedConfig) -> list[FeedItem]:
             continue
         if not href_matches(anchor.href, absolute_url, config.include_href_patterns):
             continue
+        if href_matches(anchor.href, absolute_url, config.exclude_href_patterns):
+            continue
 
         title = extract_title(anchor)
         if not title:

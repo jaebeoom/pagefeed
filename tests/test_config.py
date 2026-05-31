@@ -29,6 +29,48 @@ class ConfigTest(unittest.TestCase):
 
         self.assertEqual(config.public_path, "/test.xml")
 
+    def test_load_config_compiles_optional_exclude_patterns(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "feeds.toml"
+            config_path.write_text(
+                """
+                [[feeds]]
+                name = "test"
+                source_url = "https://example.com/"
+                output_path = "public/test.xml"
+                title = "Test Feed"
+                description = "Test description"
+                include_href_patterns = ["^/[a-z0-9-]+/.+/$"]
+                exclude_href_patterns = ["^/art-gallery/"]
+                """,
+                encoding="utf-8",
+            )
+
+            [config] = load_config(config_path)
+
+        self.assertEqual(len(config.exclude_href_patterns), 1)
+        self.assertTrue(config.exclude_href_patterns[0].search("/art-gallery/2026/05/30/01/"))
+
+    def test_load_config_rejects_invalid_exclude_patterns(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            config_path = Path(tmpdir) / "feeds.toml"
+            config_path.write_text(
+                """
+                [[feeds]]
+                name = "test"
+                source_url = "https://example.com/"
+                output_path = "public/test.xml"
+                title = "Test Feed"
+                description = "Test description"
+                include_href_patterns = ["^/[a-z0-9-]+/.+/$"]
+                exclude_href_patterns = ["["]
+                """,
+                encoding="utf-8",
+            )
+
+            with self.assertRaisesRegex(ValueError, "exclude_href_patterns\\[1\\]"):
+                load_config(config_path)
+
     def test_load_config_rejects_invalid_min_max_relationship(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             config_path = Path(tmpdir) / "feeds.toml"
