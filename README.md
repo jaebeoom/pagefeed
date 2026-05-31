@@ -72,3 +72,7 @@ Important: keeping `feeds.toml` private hides the source list from the repositor
 - Prefer opaque public feed names such as `f-a1b2c3.xml`.
 - Keep feed titles and descriptions clearly unofficial.
 - Use an identifying `PAGEFEED_USER_AGENT`, ideally including the public repository URL.
+
+## License
+
+This repository is released under the MIT License. See `LICENSE`.
