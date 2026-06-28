@@ -24,38 +24,43 @@ def load_config(config_path: Path) -> list[FeedConfig]:
         if not isinstance(raw_feed, Mapping):
             raise ValueError(f"{section} must be a TOML table")
 
-        output_path = Path(_require_string(raw_feed, "output_path", section))
-        config = FeedConfig(
-            name=_require_string(raw_feed, "name", section),
-            source_url=_require_string(raw_feed, "source_url", section),
-            output_path=output_path,
-            public_path=_normalize_public_path(
-                _optional_string(raw_feed, "public_path", section) or f"/{output_path.name}"
-            ),
-            title=_require_string(raw_feed, "title", section),
-            description=_require_string(raw_feed, "description", section),
-            include_href_patterns=_compile_patterns(
-                raw_feed,
-                "include_href_patterns",
-                section,
-                required=True,
-            ),
-            max_items=_parse_positive_int(raw_feed, "max_items", section, default=50),
-            min_items=_parse_positive_int(raw_feed, "min_items", section, default=1),
-            exclude_href_patterns=_compile_patterns(
-                raw_feed,
-                "exclude_href_patterns",
-                section,
-                required=False,
-            ),
-        )
+        config = _parse_feed_config(raw_feed, section)
         _validate_unique_paths(config, section, seen_output_paths, seen_public_paths)
-        if config.min_items > config.max_items:
-            raise ValueError(f"{section}.min_items must be less than or equal to max_items")
-
         configs.append(config)
 
     return configs
+
+
+def _parse_feed_config(raw_feed: Mapping[str, Any], section: str) -> FeedConfig:
+    output_path = Path(_require_string(raw_feed, "output_path", section))
+    config = FeedConfig(
+        name=_require_string(raw_feed, "name", section),
+        source_url=_require_string(raw_feed, "source_url", section),
+        output_path=output_path,
+        public_path=_normalize_public_path(
+            _optional_string(raw_feed, "public_path", section) or f"/{output_path.name}"
+        ),
+        title=_require_string(raw_feed, "title", section),
+        description=_require_string(raw_feed, "description", section),
+        include_href_patterns=_compile_patterns(
+            raw_feed,
+            "include_href_patterns",
+            section,
+            required=True,
+        ),
+        max_items=_parse_positive_int(raw_feed, "max_items", section, default=50),
+        min_items=_parse_positive_int(raw_feed, "min_items", section, default=1),
+        exclude_href_patterns=_compile_patterns(
+            raw_feed,
+            "exclude_href_patterns",
+            section,
+            required=False,
+        ),
+    )
+    if config.min_items > config.max_items:
+        raise ValueError(f"{section}.min_items must be less than or equal to max_items")
+
+    return config
 
 
 def _require_string(raw_feed: Mapping[str, Any], key: str, section: str) -> str:
