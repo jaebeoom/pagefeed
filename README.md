@@ -1,5 +1,7 @@
 # pagefeed
 
+[릴리스 버전·변경 설명](https://github.com/jaebeoom/pagefeed/tags) · [현재 기능과 제약](STATE.md)
+
 `pagefeed` generates static RSS feeds from simple public listing pages. Configuration can stay local or live in a GitHub Actions secret, while GitHub Pages serves the resulting XML from `public/`.
 
 The project intentionally stays small: standard-library runtime only, regex-based link selection, and no live service to operate. Generated feeds should remain unofficial and point back to the original source.
